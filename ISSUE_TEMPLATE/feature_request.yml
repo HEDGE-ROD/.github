@@ -1,0 +1,54 @@
+name: Feature request
+description: Suggest an enhancement for a HEDGE-ROD repo
+title: "[feature]: "
+labels: ["enhancement", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        HEDGE-ROD is an open-source public good for the Stellar ecosystem —
+        we welcome ideas from detection methodology to dashboard UX.
+
+  - type: dropdown
+    id: repo
+    attributes:
+      label: Which repo does this affect?
+      options:
+        - hedge-rod-backend (detection engine / REST API)
+        - hedge-rod-contract (Soroban contract)
+        - hedge-rod-frontend (dashboard)
+        - .github (org profile / CI / templates)
+        - Cross-repo / new repo
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: E.g. "Wash-trading bots that split volume across many wallets aren't caught by current wallet-graph features."
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: schema-impact
+    attributes:
+      label: Cross-repo impact
+      description: Would this change the `RiskScore` schema, the Soroban contract interface, or any shared environment variable? If yes, explain in the proposal above.
+      options:
+        - label: This feature would require changes in more than one repo
+          required: false
