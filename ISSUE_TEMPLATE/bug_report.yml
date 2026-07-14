@@ -1,0 +1,67 @@
+name: Bug report
+description: Report a problem in a HEDGE-ROD repo (backend, contract, frontend, or this org repo)
+title: "[bug]: "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug. This issue tracker is
+        shared across the HEDGE-ROD organization — please say which repo is
+        affected below.
+
+  - type: dropdown
+    id: repo
+    attributes:
+      label: Affected repo
+      options:
+        - hedge-rod-backend (detection engine / REST API)
+        - hedge-rod-contract (Soroban contract)
+        - hedge-rod-frontend (dashboard)
+        - .github (org profile / CI / templates)
+        - Not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the bug, including any error output or stack trace.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Run `python cli.py train`
+        2. Call `GET /scores/{wallet}`
+        3. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, Python/Rust/Node version, network (testnet/mainnet), contract id if relevant.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: schema-impact
+    attributes:
+      label: Cross-repo impact
+      description: Check if this bug involves the shared `RiskScore` schema, `Trade`/`Asset` schema, or environment variable contracts documented in CONTRIBUTING.md.
+      options:
+        - label: This bug touches a schema or contract shared across repos
+          required: false
