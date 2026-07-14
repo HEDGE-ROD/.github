@@ -45,3 +45,30 @@ def main() -> int:
     if "OK: RiskScore schema is in sync" not in result.stdout:
         failures.append("in_sync fixtures: expected 'OK' message not found in output")
 
+    # --- Case 2: mismatch fixtures must FAIL --------------------------------
+    mismatch = HERE / "fixtures" / "mismatch"
+    result = run_check(mismatch / "hedge-rod-backend", mismatch / "hedge-rod-contract")
+    print("=== self-test: mismatch fixtures ===")
+    print(result.stdout)
+    if result.returncode == 0:
+        failures.append(f"mismatch fixtures: expected non-zero exit, got {result.returncode}")
+    if "SCHEMA DRIFT DETECTED" not in result.stdout:
+        failures.append("mismatch fixtures: expected 'SCHEMA DRIFT DETECTED' not found in output")
+    if "ml_flag" not in result.stdout:
+        failures.append("mismatch fixtures: expected the dropped field 'ml_flag' to be reported")
+    if "confidence" not in result.stdout or "type mismatch" not in result.stdout:
+        failures.append("mismatch fixtures: expected a type mismatch on 'confidence' to be reported")
+
+    print("=== self-test summary ===")
+    if failures:
+        print(f"FAILED ({len(failures)} problem(s)):")
+        for f in failures:
+            print(f"  - {f}")
+        return 1
+
+    print("PASSED: check_schema_sync.py correctly passes in-sync fixtures and fails mismatched fixtures.")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
