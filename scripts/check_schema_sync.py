@@ -118,3 +118,45 @@ def parse_rust_risk_score(path: Path) -> list[Field]:
     if not struct_match:
         raise ValueError(f"Could not find 'pub struct RiskScore {{ ... }}' in {path}")
 
+    body = struct_match.group(1)
+    fields: list[Field] = []
+    # Matches lines like:  pub score: u32,
+    field_pattern = re.compile(r"pub\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*:\s*([A-Za-z_][A-Za-z0-9_<>:,\s]*?)\s*,")
+    for m in field_pattern.finditer(body):
+        name = m.group(1)
+        type_ = m.group(2).strip()
+        # Normalize generic wrapper types like BytesN<32> -> BytesN
+        type_ = re.split(r"[<\s]", type_, 1)[0]
+        fields.append(Field(name=name, type_=type_))
+
+    if not fields:
+        raise ValueError(f"Parsed zero fields from RiskScore in {path} — regex likely out of date")
+    return fields
+
+
+def types_compatible(py_type: str, rust_type: str) -> bool:
+    return rust_type in TYPE_EQUIVALENCE.get(py_type, set())
+
+
+def diff_schemas(py_fields: list[Field], rust_fields: list[Field]) -> list[str]:
+    """Return a list of human-readable mismatch lines; empty if in sync."""
+    problems: list[str] = []
+
+    py_by_name = {f.name: f for f in py_fields if f.name not in IDENTITY_FIELDS_NOT_ON_CHAIN}
+    rust_by_name = {f.name: f for f in rust_fields}
+
+    py_names = set(py_by_name)
+    rust_names = set(rust_by_name)
+
+    only_in_python = sorted(py_names - rust_names)
+    only_in_rust = sorted(rust_names - py_names)
+    shared = sorted(py_names & rust_names)
+
+    for name in only_in_python:
+        f = py_by_name[name]
+        problems.append(f"  - field '{name}' ({f.type_}) exists in Python RiskScore but not in Rust RiskScore")
+
+    for name in only_in_rust:
+        f = rust_by_name[name]
+        problems.append(f"  + field '{name}' ({f.type_}) exists in Rust RiskScore but not in Python RiskScore")
+
