@@ -125,3 +125,37 @@ field sets don't match (allowing the documented `int<->u32`,
 `bool<->bool`, `datetime<->u64` type mapping). Run it locally with sibling
 checkouts of `hedge-rod-backend` and `hedge-rod-contract`:
 
+```bash
+git clone https://github.com/HEDGE-ROD/hedge-rod-backend
+git clone https://github.com/HEDGE-ROD/hedge-rod-contract
+git clone https://github.com/HEDGE-ROD/.github hedge-rod-github
+cd hedge-rod-github
+python3 scripts/check_schema_sync.py \
+  --backend ../hedge-rod-backend \
+  --contract ../hedge-rod-contract
+```
+
+See [`scripts/README.md`](scripts/README.md) for the exact CI checkout
+layout and current output.
+
+Other shared contracts worth knowing about (documented in
+`hedge-rod-backend`'s README under "HEDGE-ROD Organization"):
+
+- **Trade / Asset schema** (`hedge-rod-backend/ingestion/data_models.py`) — backend-internal, but shapes what gets persisted and eventually surfaced.
+- **Environment variables** — `HEDGE_ROD_SCORE_CONTRACT_ID`, `HEDGE_ROD_SERVICE_SECRET_KEY`, `RISK_SCORE_THRESHOLD` are shared config keys between the backend and the deployed contract.
+- **Soroban contract interface** — `submit_score` / `get_score` / `query_risk_gate` signatures. A change here is a breaking change for any external integrator (AMMs, aggregators) using `query_risk_gate`.
+
+## Code review
+
+All PRs are reviewed before merge. We look for:
+
+- Correctness and test coverage for the change
+- No secrets, keys, or credentials in the diff
+- Cross-repo schema impact called out explicitly (see PR template)
+- Consistency with each repo's existing conventions (ruff/PEP 8 for
+  Python, rustfmt/clippy-clean for Rust)
+
+## Reporting security issues
+
+Do not open a public issue for a security vulnerability — see
+[SECURITY.md](SECURITY.md).
