@@ -41,3 +41,44 @@ jobs:
 ```yaml
 name: Contract CI
 
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  rust:
+    uses: HEDGE-ROD/.github/.github/workflows/rust-ci.yml@main
+    with:
+      wasm-package: hedge-rod-score
+```
+
+### `hedge-rod-frontend/.github/workflows/ci.yml`
+
+```yaml
+name: Frontend CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  static-check:
+    uses: HEDGE-ROD/.github/.github/workflows/frontend-ci.yml@main
+```
+
+## Notes
+
+- Pin `@main` to a tag (e.g. `@v1`) once this repo starts tagging releases,
+  so downstream CI doesn't break on an in-flight change to a shared
+  workflow.
+- `workflow_call` reusable workflows must live in the *calling* repo's
+  organization-visible `.github` repo (or the same repo) and the caller
+  needs `permissions:` set appropriately if the reusable workflow needs
+  elevated tokens; none of the three workflows here require anything beyond
+  default `contents: read`.
+- The `schema-sync.yml` workflow in this same directory is **not**
+  `workflow_call` — it runs directly in this repo against sibling
+  checkouts. See [`../scripts/README.md`](../scripts/README.md) for how CI
+  would wire the three-repo checkout.
