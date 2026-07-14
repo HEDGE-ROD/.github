@@ -43,3 +43,39 @@ ruff check .                  # lint (line-length 100, py3.10+ target)
 pytest --cov=detection --cov=ingestion --cov=config -q
 ```
 
+### hedge-rod-contract (Rust / Soroban)
+
+```bash
+git clone https://github.com/HEDGE-ROD/hedge-rod-contract && cd hedge-rod-contract
+cargo fmt --all -- --check
+cargo clippy --all-targets -- -D warnings
+cargo test --workspace
+cargo build --target wasm32-unknown-unknown --release -p hedge-rod-score
+```
+
+### hedge-rod-frontend (vanilla JS)
+
+No build step — it's dependency-free static HTML/CSS/JS.
+
+```bash
+git clone https://github.com/HEDGE-ROD/hedge-rod-frontend && cd hedge-rod-frontend
+./serve.sh                     # http://localhost:5173, needs the backend API running
+```
+
+Syntax-check any JS you touch with `node --check path/to/file.js` before
+opening a PR — that's what CI runs (see [`.github/workflows/frontend-ci.yml`](.github/workflows/frontend-ci.yml)).
+
+## Commit conventions
+
+Use [conventional commits](https://www.conventionalcommits.org/):
+
+```
+<type>: <short description>
+
+<optional longer body>
+```
+
+Types: `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, `perf`, `ci`.
+
+Examples:
+
