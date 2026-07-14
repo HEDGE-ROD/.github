@@ -1,0 +1,59 @@
+name: Reusable / Frontend Static Check
+
+# hedge-rod-frontend is a dependency-free, buildless vanilla HTML/CSS/JS app
+# (see its README "Quick start" — no package.json, no bundler). This job
+# does the minimum meaningful CI for that shape: syntax-check every JS file
+# with the Node parser (`node --check`, catches typos/syntax errors without
+# needing a linter dependency) and a light structural check on the HTML
+# entry point. Call it from hedge-rod-frontend's own workflow with `uses:`;
+# see the "Calling this workflow" note in this repo's README / CONTRIBUTING.
+
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        description: Directory containing index.html / app.js
+        type: string
+        default: "."
+      html-entry:
+        description: Path (relative to working-directory) to the HTML entry point
+        type: string
+        default: "index.html"
+      node-version:
+        description: Node.js version used to run the syntax checks
+        type: string
+        default: "20"
+
+jobs:
+  static-check:
+    name: node --check + HTML sanity
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+
+      - name: Syntax-check every JS file (node --check)
+        run: |
+          set -euo pipefail
+          status=0
+          while IFS= read -r -d '' file; do
+            echo "Checking: $file"
+            node --check "$file" || status=1
+          done < <(find . -type f -name '*.js' -not -path '*/vendor/*' -not -path '*/node_modules/*' -print0)
+          exit "$status"
+
+      - name: Basic HTML sanity check on entry point
+        run: |
+          set -euo pipefail
+          file="${{ inputs.html-entry }}"
+          test -f "$file" || { echo "::error::$file not found"; exit 1; }
+          grep -qi '<!doctype html>' "$file" || { echo "::error::$file missing <!doctype html>"; exit 1; }
+          grep -qi '<html' "$file" || { echo "::error::$file missing <html> tag"; exit 1; }
+          grep -qi '</html>' "$file" || { echo "::error::$file missing closing </html> tag"; exit 1; }
+          echo "$file looks structurally sane."
