@@ -35,3 +35,33 @@ Examples of unacceptable behavior:
 - Other conduct which could reasonably be considered inappropriate in a
   professional setting
 
+## Enforcement Responsibilities
+
+Project maintainers are responsible for clarifying and enforcing our
+standards of acceptable behavior and will take appropriate and fair
+corrective action in response to any behavior they deem inappropriate,
+threatening, offensive, or harmful.
+
+## Scope
+
+This Code of Conduct applies within all HEDGE-ROD community spaces
+(issues, pull requests, discussions, and any HEDGE-ROD-affiliated Discord
+channels), and also applies when an individual is officially representing
+the community in public spaces.
+
+## Enforcement
+
+Instances of abusive, harassing, or otherwise unacceptable behavior may be
+reported to the maintainers by opening a confidential report via the
+process described in [SECURITY.md](SECURITY.md) (email), or by contacting
+maintainers directly on the Stellar Discord (https://discord.gg/stellar).
+All complaints will be reviewed and investigated promptly and fairly.
+
+Maintainers are obligated to respect the privacy and security of the
+reporter of any incident.
+
+## Attribution
+
+This Code of Conduct is adapted from the [Contributor Covenant](https://www.contributor-covenant.org),
+version 2.1, available at
+https://www.contributor-covenant.org/version/2/1/code_of_conduct.html.
