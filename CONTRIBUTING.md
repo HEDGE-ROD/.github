@@ -79,3 +79,49 @@ Types: `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, `perf`, `ci`.
 
 Examples:
 
+```
+feat: add wallet-graph centrality feature to the ML ensemble
+fix: clamp confidence to 0-100 in RiskScore.combine
+docs: document query_risk_gate fail-closed behavior
+```
+
+## Test and coverage expectations
+
+- New functionality needs tests (unit tests at minimum; integration tests
+  for API endpoints or contract functions).
+- Backend: `pytest` must pass, and CI runs
+  `pytest --cov=detection --cov=ingestion --cov=config`. Aim for meaningful
+  coverage of new code paths, not just a percentage.
+- Contract: `cargo test --workspace` must pass, including any new
+  `test_*.rs` module you add for a new function.
+- Frontend: there's no formal test runner today; verify manually against a
+  running backend and keep changes syntax-clean (`node --check`).
+- Lint must pass before requesting review: `ruff check .` (backend),
+  `cargo clippy --all-targets -- -D warnings` (contract).
+
+## The cross-repo schema-sync rule
+
+**This is the rule most likely to bite you.** The `RiskScore` record is
+defined twice, in two languages, and both definitions must agree:
+
+| Field | Python (`hedge-rod-backend/detection/risk_score.py`) | Rust (`hedge-rod-contract/contracts/hedge-rod-score/src/types.rs`) |
+|---|---|---|
+| wallet | `str` | `Address` (on-chain caller arg, not stored in the `RiskScore` struct itself) |
+| asset_pair | `str` | `Symbol` (same) |
+| score | `int` (0-100) | `u32` (0-100) |
+| benford_flag | `bool` | `bool` |
+| ml_flag | `bool` | `bool` |
+| confidence | `int` (0-100) | `u32` (0-100) |
+| timestamp | `datetime` | `u64` (ledger timestamp) |
+
+**If you change a field name, type, or range in one, update the other in
+the same change set** (or open a tracked follow-up issue and link it in
+your PR — see the PR template's "Cross-repo schema impact" checklist).
+
+This repo (`.github`) ships
+[`scripts/check_schema_sync.py`](scripts/check_schema_sync.py), a
+zero-dependency Python script that parses both definitions and fails if the
+field sets don't match (allowing the documented `int<->u32`,
+`bool<->bool`, `datetime<->u64` type mapping). Run it locally with sibling
+checkouts of `hedge-rod-backend` and `hedge-rod-contract`:
+
