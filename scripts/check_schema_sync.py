@@ -40,3 +40,42 @@ from pathlib import Path
 # this org's CONTRIBUTING.md.
 IDENTITY_FIELDS_NOT_ON_CHAIN = {"wallet", "asset_pair"}
 
+# Documented cross-language type equivalences for the fields that ARE
+# expected to match between the two definitions.
+TYPE_EQUIVALENCE = {
+    "int": {"u32", "u64", "i32", "i64"},
+    "bool": {"bool"},
+    "datetime": {"u64"},  # datetime <-> ledger timestamp (u64)
+    "str": {"Address", "Symbol", "BytesN", "Bytes"},
+}
+
+
+@dataclass(frozen=True)
+class Field:
+    name: str
+    type_: str
+
+
+def _strip_comments(text: str) -> str:
+    # Remove Rust doc comments (///, //!, //) and Python comments (#) on
+    # each line so they never smuggle in a lookalike field.
+    lines = []
+    for line in text.splitlines():
+        stripped = line
+        for marker in ("///", "//!", "//"):
+            idx = stripped.find(marker)
+            if idx != -1:
+                stripped = stripped[:idx]
+        if "#" in stripped:
+            # crude but sufficient here: Python source in this file has no
+            # '#' inside the RiskScore class body other than comments.
+            stripped = stripped.split("#", 1)[0]
+        lines.append(stripped)
+    return "\n".join(lines)
+
+
+def parse_python_risk_score(path: Path) -> list[Field]:
+    """Parse the `class RiskScore(BaseModel): ...` block field:type pairs."""
+    if not path.is_file():
+        raise FileNotFoundError(f"Python RiskScore source not found: {path}")
+
