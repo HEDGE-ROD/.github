@@ -1,127 +1,77 @@
-# HEDGE-ROD Dashboard 🔍
-
-[![Built on Stellar](https://img.shields.io/badge/Built%20on-Stellar-blue?logo=stellar)](https://stellar.org)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-
-Lightweight web dashboard for **HEDGE-ROD** — wash-trading and artificial-volume
-risk scores for the Stellar DEX. It is a dependency-free static app (vanilla
-HTML/CSS/JS) that reads from the [`hedge-rod-backend`](https://github.com/HEDGE-ROD/hedge-rod-backend)
-REST API.
-
-## Features
-
-- **Score lookup** — risk score (0–100) for a wallet + asset pair, with Benford
-  and ML flags plus the top SHAP feature contributions
-- **Recent alerts** — wallets at or above the alert threshold (score ≥ 75)
-- **Asset risk ranking** — average risk score and wallet count per asset pair
-- **Live stats + health indicator**, auto-refreshing every 60s
-
-## Quick start
-
-The dashboard needs the backend API running first (default `http://localhost:8000`):
-
-```bash
-# in the hedge-rod-backend repo
-uvicorn api.main:app --reload
-```
-
-Then serve the dashboard:
-
-```bash
-./serve.sh            # http://localhost:5173
-# or: python3 -m http.server 5173
-```
-
-## Configuration
-
-Point the dashboard at a different API by editing [`config.js`](config.js):
-
-```js
-window.HEDGE_ROD_API = "https://api.your-host.example";
-```
-
-## API endpoints consumed
-
-| Endpoint | Used for |
-|---|---|
-| `GET /health` | status indicator |
-| `GET /scores` | wallets-scored stat |
-| `GET /scores/{wallet}` | score lookup card |
-| `GET /scores/{wallet}/explain` | SHAP feature contributions |
-| `GET /alerts` | recent alerts table + flagged stat |
-| `GET /assets/risk-ranking` | asset ranking grid + stats |
-
-## License
-
-MIT — see [LICENSE](LICENSE).
 # HEDGE-ROD 🔍
 
+**Wash-trading and artificial-volume detection for the Stellar DEX.**
+
+[![Backend CI](https://img.shields.io/github/actions/workflow/status/HEDGE-ROD/hedge-rod-backend/ci.yml?branch=main&label=backend%20CI)](https://github.com/HEDGE-ROD/hedge-rod-backend/actions)
+[![Contract CI](https://img.shields.io/github/actions/workflow/status/HEDGE-ROD/hedge-rod-contract/ci.yml?branch=main&label=contract%20CI)](https://github.com/HEDGE-ROD/hedge-rod-contract/actions)
 [![Built on Stellar](https://img.shields.io/badge/Built%20on-Stellar-blue?logo=stellar)](https://stellar.org)
 [![Soroban Smart Contracts](https://img.shields.io/badge/Smart%20Contracts-Soroban-purple)](https://soroban.stellar.org)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/HEDGE-ROD/hedge-rod-backend/blob/main/LICENSE)
+[![Testnet Contract](https://img.shields.io/badge/Testnet%20Contract-TBD-lightgrey)](#)
 
+> Submitted to the Stellar **Drip Wave** builder programme.
 
-Hybrid on-chain fraud detection for the Stellar DEX — detecting wash trading and artificial volume using Benford's Law combined with ensemble machine learning, with risk scores anchored on Soroban.
+Wash trading — simultaneously buying and selling the same asset to
+artificially inflate volume — is one of the most pervasive forms of market
+manipulation in DeFi. Stellar's ledger is fully transparent, but the sheer
+volume of on-chain activity makes manual detection impossible, and no
+production-grade, open-source detection system existed for the Stellar DEX.
+**HEDGE-ROD fills that gap.**
 
-## Overview
+It ingests trade data from the Stellar Horizon API, scores wallets and asset
+pairs for wash-trading risk by combining **Benford's Law** digit-distribution
+analysis with an **ensemble ML classifier** (Random Forest + XGBoost +
+LightGBM, explained with SHAP), and publishes the resulting **HEDGE-ROD Risk
+Score (0–100)** through a public REST API, a web dashboard, and an on-chain
+Soroban risk registry that other Stellar protocols can query directly.
 
-HEDGE-ROD is a fraud detection system for the Stellar Decentralised Exchange (SDEX). It ingests trade data from the Stellar Horizon API, scores wallets and asset pairs for wash-trading risk using a combination of Benford's Law digit-distribution analysis and ensemble ML classifiers, and publishes those scores both via a public REST API and an on-chain Soroban contract so other protocols can consume them natively.
+## Why this matters
 
-### The Problem
+- **Traders are misled** by volume that looks like real liquidity and isn't.
+- **Token issuers manipulate rankings** on DEX aggregators by inflating
+  24h volume.
+- **Liquidity providers lose funds** entering pools dominated by self-dealing.
+- **Ecosystem credibility suffers** — inflated metrics undermine confidence
+  from institutions, exchanges, and new users.
 
-Wash trading — simultaneously buying and selling the same asset to artificially inflate trading volume — is one of the most pervasive forms of market manipulation in DeFi. Blockchain transparency means every transaction is recorded, but the sheer volume of on-chain activity makes manual detection impossible.
+HEDGE-ROD is fully open — the scores, features, and methodology are
+transparent and auditable, and the on-chain registry means any AMM, lending
+protocol, or aggregator on Stellar can gate against a risk score natively,
+without trusting an external oracle.
 
-On DEXs, wash trading causes real harm:
+## Organization map
 
-- **Traders are misled** into believing an asset has genuine liquidity and market interest when it does not
-- **Token issuers manipulate rankings** on DEX aggregators and data platforms by inflating 24-hour volume figures
-- **Liquidity providers lose funds** by entering pools that appear active but are dominated by self-dealing activity
-- **Ecosystem credibility suffers** — inflated volume metrics on the Stellar DEX undermine confidence from institutional participants, exchanges, and new users
+HEDGE-ROD is split across **three** repos plus this org-profile repo:
 
-Existing detection approaches are either manual (slow and unscalable) or rely on simple heuristics (easily gamed). No production-grade, open-source wash trading detection system exists for the Stellar DEX — HEDGE-ROD is built to fill that gap.
+| Repo | Role | Language |
+|---|---|---|
+| [**hedge-rod-backend**](https://github.com/HEDGE-ROD/hedge-rod-backend) | Detection engine + public REST API: Horizon ingestion, Benford's Law analysis, ML feature engineering, ensemble training/inference, SHAP explanations, the `RiskScore` schema, and on-chain publishing | Python (FastAPI) |
+| [**hedge-rod-contract**](https://github.com/HEDGE-ROD/hedge-rod-contract) | Soroban smart contract — the on-chain risk registry (`hedge-rod-score`). Exposes `submit_score` / `get_score` / `query_risk_gate` for composability with other Stellar protocols | Rust (Soroban) |
+| [**hedge-rod-frontend**](https://github.com/HEDGE-ROD/hedge-rod-frontend) | Dependency-free web dashboard: score lookup, recent alerts, asset risk ranking, SHAP explanations | HTML / CSS / JS (vanilla) |
+| **.github** *(this repo)* | Org profile, shared CI workflows, issue/PR templates, contributing & governance docs, cross-repo schema-sync check | — |
 
-### What HEDGE-ROD Does
-
-At a high level, it does three things:
-
-- **🔍 Detects** — identifies wallet pairs, trading clusters, and asset pools exhibiting statistically anomalous transaction patterns consistent with wash trading, including circular trade routing, self-matching order behaviour, and artificial volume concentration
-- **📊 Scores** — assigns each wallet and each trading pair a **HEDGE-ROD Risk Score (0–100)** based on the combined output of its Benford anomaly metrics and ML classifiers, updating continuously as new ledger data is processed
-- **📡 Reports** — exposes risk scores and flagged activity through a public API and lightweight dashboard, making the intelligence accessible to DEX users, protocol teams, wallet providers, and compliance integrators without requiring technical expertise
-
-## Features
-
-- **Benford's Law Anomaly Engine**: Chi-square, per-digit Z-score, and MAD analysis of transaction amounts across rolling time windows (1h, 4h, 24h, 7d, 30d)
-- **Ensemble ML Scoring**: Random Forest, XGBoost, and LightGBM classifiers trained on labelled wash-trade patterns with SHAP interpretability
-- **HEDGE-ROD Risk Score (0–100)**: Continuously updated composite score per wallet and per trading pair
-- **On-Chain Risk Registry**: Soroban smart contract exposes risk scores so AMMs, lending protocols, and aggregators can gate suspicious activity natively
-- **Public REST API**: Query scores, recent alerts, and asset risk rankings
-- **Lightweight Dashboard**: Web UI for risk-score visibility without requiring technical expertise
-- **Open Methodology**: Scores, features, and training data are fully transparent and auditable
-
-## Architecture
+### Architecture
 
 ```mermaid
 graph TB
-    subgraph Ingestion["Layer 1: Data Ingestion"]
+    subgraph Ingestion["Ingestion"]
         HOR[Stellar Horizon API]
         STREAM[horizon_streamer.py]
         HIST[historical_loader.py]
     end
 
-    subgraph Detection["Layer 2: Detection Engine"]
-        BENF[benford_engine.py]
-        FEAT[feature_engineering.py]
-        TRAIN[model_training.py]
-        INFER[model_inference.py]
-        SHAP[shap_explainer.py]
-        SCORE[HEDGE-ROD Risk Score]
+    subgraph Detection["Detection (hedge-rod-backend)"]
+        BENF[Benford's Law engine]
+        FEAT[Feature engineering]
+        ML[RF / XGBoost / LightGBM ensemble]
+        SHAP[SHAP explainability]
+        SCORE[RiskScore 0-100]
     end
 
-    subgraph Output["Layer 3: Contract + API"]
-        CONTRACT[Soroban Contract\nhedge-rod-score]
+    subgraph Output["API + On-chain + Dashboard"]
         API[FastAPI REST API]
-        DASH[Web Dashboard]
-        WEBHOOK[Webhook Alerts]
+        CONTRACT[Soroban contract\nhedge-rod-score]
+        DASH[Web dashboard\nhedge-rod-frontend]
     end
 
     subgraph Consumers["Ecosystem Consumers"]
