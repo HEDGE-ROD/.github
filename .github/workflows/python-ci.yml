@@ -1,0 +1,55 @@
+name: Reusable / Python CI
+
+# Canonical Python job for the org, matching hedge-rod-backend's
+# pyproject.toml (ruff, py3.10+) and requirements.txt. Call it from another
+# repo's own workflow with `uses:`; see the "Calling this workflow" note in
+# this repo's README / CONTRIBUTING for the exact snippet.
+
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        description: Directory containing requirements.txt / pyproject.toml
+        type: string
+        default: "."
+      python-versions:
+        description: JSON array of Python versions to test against
+        type: string
+        default: '["3.10", "3.12"]'
+      requirements-file:
+        description: Path (relative to working-directory) to the requirements file
+        type: string
+        default: "requirements.txt"
+      coverage-args:
+        description: Extra pytest args, e.g. "--cov=detection --cov=ingestion"
+        type: string
+        default: ""
+
+jobs:
+  lint-and-test:
+    name: ruff + pytest (py${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ${{ fromJson(inputs.python-versions) }}
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r ${{ inputs.requirements-file }} ruff pytest pytest-cov
+
+      - name: Lint (ruff check)
+        run: ruff check .
+
+      - name: Test (pytest)
+        run: pytest ${{ inputs.coverage-args }} -q
