@@ -1,0 +1,52 @@
+name: RiskScore schema sync
+
+# Not a `workflow_call` reusable workflow — this runs directly in the
+# .github repo, checking out hedge-rod-backend and hedge-rod-contract as
+# siblings so scripts/check_schema_sync.py can parse both RiskScore
+# definitions and fail the build on drift. See scripts/README.md for the
+# checkout layout this assumes.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    # Catch drift introduced by a merge in a sibling repo even if nothing
+    # changes in .github itself.
+    - cron: "0 6 * * 1"
+  workflow_dispatch: {}
+
+jobs:
+  schema-sync:
+    name: Check RiskScore schema sync
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout .github (this repo)
+        uses: actions/checkout@v4
+        with:
+          path: dot-github
+
+      - name: Checkout hedge-rod-backend
+        uses: actions/checkout@v4
+        with:
+          repository: HEDGE-ROD/hedge-rod-backend
+          path: hedge-rod-backend
+
+      - name: Checkout hedge-rod-contract
+        uses: actions/checkout@v4
+        with:
+          repository: HEDGE-ROD/hedge-rod-contract
+          path: hedge-rod-contract
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run schema sync check
+        run: |
+          python3 dot-github/scripts/check_schema_sync.py \
+            --backend hedge-rod-backend \
+            --contract hedge-rod-contract
+
+      - name: Run self-test (proves the checker actually catches drift)
+        run: python3 dot-github/scripts/self_test_schema_sync.py
