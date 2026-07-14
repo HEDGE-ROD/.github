@@ -1,0 +1,14 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Stellar Discord
+    url: https://discord.gg/stellar
+    about: Chat with the community and the HEDGE-ROD maintainers in real time.
+  - name: Security vulnerability
+    url: https://github.com/HEDGE-ROD/.github/blob/main/SECURITY.md
+    about: Do not open a public issue for security vulnerabilities — see our coordinated-disclosure process instead.
+  - name: hedge-rod-backend README
+    url: https://github.com/HEDGE-ROD/hedge-rod-backend#readme
+    about: Detection engine + REST API docs.
+  - name: hedge-rod-contract README
+    url: https://github.com/HEDGE-ROD/hedge-rod-contract#readme
+    about: Soroban on-chain risk registry docs.
