@@ -201,3 +201,37 @@ def main(argv: list[str] | None = None) -> int:
         print(f"ERROR parsing Python schema: {exc}", file=sys.stderr)
         return 2
 
+    try:
+        rust_fields = parse_rust_risk_score(rust_path)
+    except (FileNotFoundError, ValueError) as exc:
+        print(f"ERROR parsing Rust schema: {exc}", file=sys.stderr)
+        return 2
+
+    print(f"Python  RiskScore ({py_path}):")
+    print(f"  {format_field_list(py_fields)}")
+    print(f"  (excluded from comparison as on-chain storage-key fields: {sorted(IDENTITY_FIELDS_NOT_ON_CHAIN)})")
+    print(f"Rust    RiskScore ({rust_path}):")
+    print(f"  {format_field_list(rust_fields)}")
+    print()
+
+    problems = diff_schemas(py_fields, rust_fields)
+
+    if not problems:
+        print("OK: RiskScore schema is in sync between hedge-rod-backend and hedge-rod-contract.")
+        return 0
+
+    print("SCHEMA DRIFT DETECTED between hedge-rod-backend and hedge-rod-contract RiskScore:")
+    for line in problems:
+        print(line)
+    print()
+    print(
+        "Fix: update the Python dataclass/pydantic model in "
+        "hedge-rod-backend/detection/risk_score.py and/or the Rust struct in "
+        "hedge-rod-contract/contracts/hedge-rod-score/src/types.rs so the field "
+        "sets agree (see CONTRIBUTING.md 'cross-repo schema-sync rule')."
+    )
+    return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
