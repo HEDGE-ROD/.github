@@ -160,3 +160,44 @@ def diff_schemas(py_fields: list[Field], rust_fields: list[Field]) -> list[str]:
         f = rust_by_name[name]
         problems.append(f"  + field '{name}' ({f.type_}) exists in Rust RiskScore but not in Python RiskScore")
 
+    for name in shared:
+        py_f = py_by_name[name]
+        rust_f = rust_by_name[name]
+        if not types_compatible(py_f.type_, rust_f.type_):
+            problems.append(
+                f"  ~ field '{name}' type mismatch: Python {py_f.type_!r} is not compatible with Rust {rust_f.type_!r}"
+            )
+
+    return problems
+
+
+def format_field_list(fields: list[Field], exclude: set[str] | None = None) -> str:
+    exclude = exclude or set()
+    return ", ".join(f"{f.name}:{f.type_}" for f in fields if f.name not in exclude) or "(none)"
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument(
+        "--backend",
+        type=Path,
+        default=Path("../hedge-rod-backend"),
+        help="Path to a checkout of hedge-rod-backend (default: ../hedge-rod-backend, i.e. a sibling checkout)",
+    )
+    parser.add_argument(
+        "--contract",
+        type=Path,
+        default=Path("../hedge-rod-contract"),
+        help="Path to a checkout of hedge-rod-contract (default: ../hedge-rod-contract, i.e. a sibling checkout)",
+    )
+    args = parser.parse_args(argv)
+
+    py_path = args.backend / "detection" / "risk_score.py"
+    rust_path = args.contract / "contracts" / "hedge-rod-score" / "src" / "types.rs"
+
+    try:
+        py_fields = parse_python_risk_score(py_path)
+    except (FileNotFoundError, ValueError) as exc:
+        print(f"ERROR parsing Python schema: {exc}", file=sys.stderr)
+        return 2
+
