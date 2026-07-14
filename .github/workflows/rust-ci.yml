@@ -1,0 +1,79 @@
+name: Reusable / Rust CI
+
+# Canonical Rust job for the org, matching hedge-rod-contract's Soroban
+# workspace (cargo fmt --check, clippy -D warnings, cargo test --workspace).
+# Call it from another repo's own workflow with `uses:`; see the "Calling
+# this workflow" note in this repo's README / CONTRIBUTING for the exact
+# snippet.
+
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        description: Directory containing the Cargo workspace
+        type: string
+        default: "."
+      wasm-package:
+        description: Optional crate name to build for wasm32-unknown-unknown (skipped if empty)
+        type: string
+        default: ""
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+jobs:
+  fmt:
+    name: Format check
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo fmt --all -- --check
+
+  clippy:
+    name: Clippy
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo clippy --all-targets -- -D warnings
+
+  test:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo test --workspace
+
+  wasm-build:
+    name: WASM build
+    if: inputs.wasm-package != ''
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo build --target wasm32-unknown-unknown --release -p ${{ inputs.wasm-package }}
